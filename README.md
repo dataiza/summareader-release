@@ -50,6 +50,18 @@ apps when the phone asks. The `.aab` files some projects publish are not here on
 purpose — an App Bundle is what a store uploads, not something a phone can
 open.
 
+> **Pick one source and stay with it.** This build and the Google Play build are
+> signed with different keys, and Android will not replace an app with one
+> signed by a different key. If you already have SummaReader from Play, this APK
+> will refuse to install over it, and the other way round. Moving between them
+> means uninstalling first — **which deletes your library** — so back it up in
+> Settings → Your data first, restore it afterwards, and expect to re-pair sync
+> with your recovery code.
+>
+> This is how Android works rather than something we can fix: Google holds the
+> key that signs what the Play Store delivers, and we hold the one that signs
+> this file.
+
 ### Linux
 
 There is no installer yet. A build is a directory you run out of:
