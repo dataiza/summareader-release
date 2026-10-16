@@ -9,6 +9,9 @@ every release below is a plain file you can fetch without an account.
 
 Get the latest at **[Releases](../../releases/latest)**.
 
+The free Android build is also published to [Zapstore](https://zapstore.dev)
+from each release, by `zapstore.yaml` and `.github/workflows/zapstore.yml`.
+
 ---
 
 ## What it does

@@ -1,0 +1,48 @@
+# Zapstore listing for the free Android build. Read by zsp
+# (github.com/zapstore/zsp) in .github/workflows/zapstore.yml.
+# How it works and what the owner does once: docs/ZAPSTORE.md in the app
+# repository.
+
+repository: https://github.com/dataiza/summareader-release
+
+# Free build only. The public releases hold one APK, but this regex is the
+# guard if that ever changes. The workflow also refuses a name with "premium".
+match: "^SummaReader-free-.*\\.apk$"
+
+name: SummaReader
+summary: Follow feeds, articles, YouTube, Mastodon and Nostr; read and summarize on your device.
+description: |
+  SummaReader pulls in what you follow — RSS and Atom feeds, web pages,
+  YouTube channels, Mastodon, Nostr — extracts the readable article from each,
+  keeps it, and can summarize it.
+
+  - Summarization runs on the device by default, with a model you download
+    once. You can point it at your own server or a cloud API instead.
+  - Sync is optional, end-to-end encrypted, and self-hosted. The sync server
+    holds only ciphertext.
+  - No accounts. No analytics. No telemetry. No crash reporting.
+
+  This is the free build, and it is a complete reader: no limit on how many
+  sources you follow. Premium is a separate application and is not listed here.
+
+  Android builds are arm64 only. This build and the Google Play build are
+  signed with different keys; Android will not replace one with the other.
+
+tags:
+  - reader
+  - rss
+  - nostr
+  - news
+
+# Proprietary freeware (LICENSE, EULA.md in the app repository).
+license: LicenseRef-Proprietary
+website: https://summareader.dataiza.sk
+
+icon: ./zapstore/icon.png
+images:
+  - ./zapstore/phone-library.png
+  - ./zapstore/phone-add-source.png
+  - ./zapstore/phone-settings-summaries.png
+
+# TODO(card 838): the npub of the SummaReader-only Nostr key, made in 838.
+# pubkey: npub1...

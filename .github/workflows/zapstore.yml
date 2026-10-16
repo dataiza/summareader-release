@@ -1,0 +1,103 @@
+# Publishes the free Android build of each release to Zapstore, with zsp and
+# zapstore.yaml. Does nothing until the repository secret ZAPSTORE_NSEC exists.
+# How it works and what the owner does once: docs/ZAPSTORE.md in the app
+# repository.
+name: Zapstore
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish again (for example v1.2.3)
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zapstore
+  cancel-in-progress: false
+
+env:
+  ZSP_VERSION: 0.4.17
+  # sha256 of zsp-0.4.17-linux-amd64, from the asset digest on
+  # github.com/zapstore/zsp/releases/tag/v0.4.17. Change both lines together.
+  ZSP_SHA256: 3f241da6a5dc7a85fe851d3b42b77790b651bd36c7029382a701262bda832d20
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check that Zapstore is set up
+        id: secret
+        env:
+          ZAPSTORE_NSEC: ${{ secrets.ZAPSTORE_NSEC }}
+        run: |
+          if [ -z "$ZAPSTORE_NSEC" ]; then
+            echo "::notice::Zapstore not set up, see docs/ZAPSTORE.md in the app repository"
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check the tag
+        if: steps.secret.outputs.configured == 'true'
+        run: |
+          if ! printf '%s' "$TAG" | grep -Eq '^[A-Za-z0-9._+-]+$'; then
+            echo "::error::not a tag name: $TAG"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.secret.outputs.configured == 'true'
+        with:
+          persist-credentials: false
+
+      # zapstore.yaml's `match` already selects only the free APK. This is the
+      # second guard, as in the app's public-publish step: exactly one free APK,
+      # and nothing called premium.
+      - name: Check the release holds one free APK and no premium build
+        if: steps.secret.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          names=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          apks=$(printf '%s\n' "$names" | grep -E '^SummaReader-free-.*\.apk$' || true)
+          if [ "$(printf '%s' "$apks" | grep -c .)" -ne 1 ]; then
+            echo "::error::expected exactly one SummaReader-free-*.apk in $TAG, found: ${apks:-none}"
+            exit 1
+          fi
+          if printf '%s\n' "$apks" | grep -qi premium; then
+            echo "::error::the selected asset is a premium build — refusing to publish: $apks"
+            exit 1
+          fi
+          echo "asset: $apks"
+
+      - name: Install zsp
+        if: steps.secret.outputs.configured == 'true'
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o zsp "https://github.com/zapstore/zsp/releases/download/v${ZSP_VERSION}/zsp-${ZSP_VERSION}-linux-amd64"
+          echo "${ZSP_SHA256}  zsp" | sha256sum -c -
+          chmod +x zsp
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      # zsp publishes the newest release that passes `release_filter`, so a
+      # copy of the config pins it to this tag. The copy stays at the
+      # repository root so the icon and screenshot paths still resolve.
+      - name: Publish to Zapstore
+        if: steps.secret.outputs.configured == 'true'
+        env:
+          SIGN_WITH: ${{ secrets.ZAPSTORE_NSEC }}
+          GITHUB_TOKEN: ${{ github.token }}
+          OVERWRITE: ${{ github.event_name == 'workflow_dispatch' && '--overwrite-release' || '' }}
+        run: |
+          cp zapstore.yaml zapstore.ci.yaml
+          printf "\nrelease_filter: '^%s\$'\n" "$(printf '%s' "$TAG" | sed 's/[.+]/\\&/g')" >> zapstore.ci.yaml
+          zsp --version
+          # shellcheck disable=SC2086
+          zsp publish --quiet --skip-preview --skip-metadata --no-color $OVERWRITE zapstore.ci.yaml
