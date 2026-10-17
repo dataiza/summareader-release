@@ -44,5 +44,6 @@ images:
   - ./zapstore/phone-add-source.png
   - ./zapstore/phone-settings-summaries.png
 
-# TODO(card 838): the npub of the SummaReader-only Nostr key, made in 838.
-# pubkey: npub1...
+# The npub of the SummaReader-only Nostr key (card 838). Its nsec is the
+# repository secret ZAPSTORE_NSEC and the owner's password manager, nowhere else.
+pubkey: npub1d97swtdynut270s2zqlqqqdjjk0fnd54uuxy6ld2umwm74wuy37q62gmx4
